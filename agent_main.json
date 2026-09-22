@@ -1,0 +1,332 @@
+{
+  "name": "Gomla FAQ Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=={{ $json.body.question }}",
+        "options": {
+          "systemMessage": "You are Gomla.eg customer support assistant.\n\nUse the Gomla.eg FAQ tool whenever it can answer the customer's question.\n\nDo not guess or invent information. If the FAQ does not contain enough information, say that the information is not available in the FAQ.\n\nAnswer politely and concisely."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "4b601a1a-f87c-4c2b-b910-9405c81a425f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        96,
+        208
+      ],
+      "id": "2dc97ce7-7985-4e1f-a8bc-fd28d2055f1e",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "8ICSvpDaR3RItKVf",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Use this whenever the customer asks about shop policies, products, shipping, or returns.",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "gomla_faq",
+          "mode": "list",
+          "cachedResultName": "gomla_faq"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        560,
+        256
+      ],
+      "id": "1622edf7-0cc6-4a64-ac6b-bfaa78e142f3",
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "JHNx0XyKt4rP0Qos",
+          "name": "Qdrant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-embedding-2"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        352,
+        320
+      ],
+      "id": "2495c85e-4232-4ef1-befc-1bc35b162039",
+      "name": "Embeddings Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "8ICSvpDaR3RItKVf",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "mariamabdelhady20125@gmail.com",
+        "subject": "Gomla.eg - Approval Required",
+        "message": "=Gomla.eg Approval Request\n\nAI Agent Draft:\n{{ $json.output }}\n\nApprove:\n{{ $execution.resumeUrl }}&action=approve\n\nReject:\n{{ $execution.resumeUrl }}&action=reject",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        592,
+        32
+      ],
+      "id": "e09be3cf-15ca-4a6f-9029-3202d975df89",
+      "name": "Send a message",
+      "webhookId": "bcb71a23-4bce-41fc-8a4f-a799499c7f59",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "6OGkyULaXSGYqPnb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        816,
+        32
+      ],
+      "id": "f3dc78d8-eae9-4227-9c97-db50899b23d8",
+      "name": "Wait",
+      "webhookId": "ce259f17-f5d3-4e80-a5a8-1982541abf20"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "64649fe7-3df9-4be4-9018-4caf19084c2a",
+              "leftValue": "={{ $json.query.action }}",
+              "rightValue": "approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        944,
+        32
+      ],
+      "id": "bcbcfb67-6e81-48df-9343-fe074fcc49c3",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ac0e57c5-8895-4ea3-a46d-b9ba758648fb",
+              "name": "response",
+              "value": "={{ $('AI Agent').item.json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1168,
+        -32
+      ],
+      "id": "d33dd510-a269-4a81-b44b-e6b1d53a6590",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1baa9f5c-33bd-452a-a6de-59f8ab8b02a3",
+              "name": "response",
+              "value": "Thank you for contacting Gomla.eg. Your request was not approved. Please contact customer support for further assistance.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1168,
+        128
+      ],
+      "id": "744a3818-cac4-4f40-bddf-6f0a13ab8a4b",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gomla-faq",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "8a035faa-2738-4fc5-9b1e-5cc3ced7436d",
+      "name": "Webhook",
+      "webhookId": "de8083bc-25ac-436d-97de-eff87be07d74"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "449ab0af-18d4-4a03-af1e-75b3f1f9cb56",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ead08f26a1657b74da0ed79d487805386589c4179d012fd2b5ec4861ad397274"
+  },
+  "nodeGroups": [],
+  "id": "uO5BsVe4bTueLVb6",
+  "tags": []
+}

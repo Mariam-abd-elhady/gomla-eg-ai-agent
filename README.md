@@ -104,8 +104,6 @@ Then configure your own credentials for:
 * Qdrant
 * Gmail
 
-> API keys and credentials are not included in this repository.
-
 ---
 
 ## Testing
